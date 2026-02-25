@@ -7,6 +7,11 @@ METHOD=""
 
 VALID_METHODS=(
     "pyboost"
+    "jn_ap_op2"
+    "nn_retraining_with_pseudolabels"
+    "scape"
+    "transformer_ensemble"
+    "lgc_ensemble_direct"
 )
 
 while getopts ":m:h" opt; do
@@ -36,10 +41,10 @@ if [[ ! " ${VALID_METHODS[*]} " =~ " ${METHOD} " ]]; then
     echo "Error: Unknown method '${METHOD}'. Choose one of: ${VALID_METHODS[*]}" >&2; exit 1
 fi
 
-mkdir -p "${LOGS_DIR}/${METHOD}"
+mkdir -p "${LOGS_DIR}/methods/${METHOD}"
 
 echo "> Running method: ${METHOD}"
 
 ./pipelines/${METHOD}/${METHOD}.sh \
-    > "${LOGS_DIR}/${METHOD}/run_${METHOD}.PID$$.out" \
-    2> "${LOGS_DIR}/${METHOD}/run_${METHOD}.PID$$.err" &
+    > "${LOGS_DIR}/methods/${METHOD}/run_${METHOD}.PID$$.out" \
+    2> "${LOGS_DIR}/methods/${METHOD}/run_${METHOD}.PID$$.err" &

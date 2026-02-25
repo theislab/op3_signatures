@@ -3,10 +3,10 @@
 set -e
 
 # ============================================================================
-# Py-boost prediction pipeline
+# LGC Ensemble prediction pipeline (direct / single-job)
 # ============================================================================
 #
-# Runs the py-boost model to predict t-scores from de_train.h5ad.
+# Runs prepare → train → predict in a single job.
 # Expects to be called from the project root via run_pipelines/run_methods.sh.
 #
 # To change parameters, edit the Configuration section below.
@@ -19,8 +19,8 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 
-PIPELINE_NAME="pyboost"
-ENV_DIR=./venvs/venvs/pyboost
+PIPELINE_NAME="lgc_ensemble_direct"
+ENV_DIR=./venvs/venvs/lgc_ensemble
 LOGS_DIR=./logs
 QOS=gpu_normal
 PARTITION=gpu_p
@@ -30,14 +30,18 @@ BASE="./data/benchmark"
 DE_TRAIN="${BASE}/resources/datasets/neurips-2023-data/de_train.h5ad"
 ID_MAP="${BASE}/resources/datasets/neurips-2023-data/id_map.csv"
 LAYER="clipped_sign_log10_pval"
-PREDICTOR_NAMES="py_boost"
-OUTPUT="${BASE}/results/methods/pyboost/predictions.h5ad"
+SCHEMES="initial light heavy"
+MODELS="LSTM GRU Conv"
+EPOCHS=250
+KF_N_SPLITS=5
+OUTPUT="${BASE}/results/methods/lgc_ensemble_direct/predictions.h5ad"
+OUTPUT_MODEL="${BASE}/results/models/lgc_ensemble_direct"
 
 # ============================================================================
 # Setup
 # ============================================================================
 
-mkdir -p "$(dirname "${BASE}")" "$(dirname "${OUTPUT}")" "${LOGS_DIR}/methods/${PIPELINE_NAME}"
+mkdir -p "$(dirname "${OUTPUT}")" "${OUTPUT_MODEL}" "${LOGS_DIR}/methods/${PIPELINE_NAME}"
 
 SBATCH_PREAMBLE="export PATH=\${HOME}/miniforge3/bin:\${PATH} && \
     export TMPDIR=\${HOME}/tmp && mkdir -p \${TMPDIR} && \
@@ -49,30 +53,39 @@ SBATCH_PREAMBLE="export PATH=\${HOME}/miniforge3/bin:\${PATH} && \
 # Submit job
 # ============================================================================
 
-echo "> Submitting py-boost prediction job"
-echo "  de_train:        ${DE_TRAIN}"
-echo "  id_map:          ${ID_MAP}"
-echo "  layer:           ${LAYER}"
-echo "  predictor_names: ${PREDICTOR_NAMES}"
-echo "  output:          ${OUTPUT}"
+echo "> Submitting LGC ensemble (direct) prediction job"
+echo "  de_train:    ${DE_TRAIN}"
+echo "  id_map:      ${ID_MAP}"
+echo "  layer:       ${LAYER}"
+echo "  schemes:     ${SCHEMES}"
+echo "  models:      ${MODELS}"
+echo "  epochs:       ${EPOCHS}"
+echo "  kf_n_splits:  ${KF_N_SPLITS}"
+echo "  output:       ${OUTPUT}"
+echo "  output_model: ${OUTPUT_MODEL}"
 
 sbatch -W \
     -J ${PIPELINE_NAME} \
     --partition=${PARTITION} \
     --qos=${QOS} \
     --mem=64G \
-    --time=4:00:00 \
-    --cpus-per-task=4 \
+    --time=24:00:00 \
+    --cpus-per-task=8 \
     --gpus=1 \
     --output="${LOGS_DIR}/methods/${PIPELINE_NAME}/${PIPELINE_NAME}.%j.out" \
     --error="${LOGS_DIR}/methods/${PIPELINE_NAME}/${PIPELINE_NAME}.%j.err" \
     --wrap="${SBATCH_PREAMBLE} && \
-        python3 -m src.methods.pyboost.script \
+        python3 -m src.methods.lgc_ensemble_direct.script \
             --de_train ${DE_TRAIN} \
             --id_map ${ID_MAP} \
             --layer ${LAYER} \
-            --predictor_names ${PREDICTOR_NAMES} \
-            --output ${OUTPUT}"
+            --schemes ${SCHEMES} \
+            --models ${MODELS} \
+            --epochs ${EPOCHS} \
+            --kf_n_splits ${KF_N_SPLITS} \
+            --output ${OUTPUT} \
+            --output_model ${OUTPUT_MODEL}"
 
-echo "> Py-boost prediction completed"
+echo "> LGC ensemble (direct) prediction completed"
 echo "> Output saved to: ${OUTPUT}"
+echo "> Models saved to: ${OUTPUT_MODEL}"
