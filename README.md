@@ -44,6 +44,7 @@ Available methods:
 | `pyboost` | Py-boost gradient boosting |
 | `jn_ap_op2` | Deep learning ensemble (OP2-based) |
 | `nn_retraining_with_pseudolabels` | Neural network with pseudolabel retraining |
+| `nn_retraining_with_pseudolabels_fingerprints` | Neural network with pseudolabel retraining with Morgan Fingerprints|
 | `scape` | SCAPE TF-based model |
 | `transformer_ensemble` | Transformer ensemble |
 | `lgc_ensemble_direct` | LGC LSTM/GRU/Conv ensemble (single-job) |
@@ -98,6 +99,7 @@ Results are saved to `data/benchmark/results/metrics/methods/<method>/` and `dat
 │   ├── pyboost/
 │   ├── jn_ap_op2/
 │   ├── nn_retraining_with_pseudolabels/
+│   ├── nn_retraining_with_pseudolabels_fingerprints/
 │   ├── scape/
 │   ├── transformer_ensemble/
 │   └── lgc_ensemble_direct/
@@ -115,6 +117,7 @@ Results are saved to `data/benchmark/results/metrics/methods/<method>/` and `dat
 │   │   ├── pyboost/
 │   │   ├── jn_ap_op2/
 │   │   ├── nn_retraining_with_pseudolabels/
+│   │   ├── nn_retraining_with_pseudolabels_fingerprints/
 │   │   ├── scape/
 │   │   ├── transformer_ensemble/
 │   │   ├── lgc_ensemble_direct/       # Single-job LGC ensemble entry point
@@ -141,6 +144,7 @@ logs/
 │   ├── pyboost/
 │   ├── jn_ap_op2/
 │   ├── nn_retraining_with_pseudolabels/
+│   ├── nn_retraining_with_pseudolabels_fingerprints/
 │   ├── scape/
 │   ├── transformer_ensemble/
 │   └── lgc_ensemble_direct/
@@ -169,6 +173,7 @@ data/
         │   ├── pyboost/
         │   ├── jn_ap_op2/
         │   ├── nn_retraining_with_pseudolabels/
+        │   ├── nn_retraining_with_pseudolabels_fingerprints_.../
         │   ├── scape/
         │   ├── transformer_ensemble/
         │   └── lgc_ensemble_direct/
