@@ -44,7 +44,8 @@ Available methods:
 | `pyboost` | Py-boost gradient boosting |
 | `jn_ap_op2` | Deep learning ensemble (OP2-based) |
 | `nn_retraining_with_pseudolabels` | Neural network with pseudolabel retraining |
-| `nn_retraining_with_pseudolabels_fingerprints` | Neural network with pseudolabel retraining with Morgan Fingerprints|
+| `nn_retraining_with_pseudolabels_fingerprints` | Neural network with pseudolabel retraining with Morgan Fingerprints |
+| `nn_retraining_with_pseudolabels_embeddings` | Neural network with pseudolabel retraining with molecule embeddings |
 | `scape` | SCAPE TF-based model |
 | `transformer_ensemble` | Transformer ensemble |
 | `lgc_ensemble_direct` | LGC LSTM/GRU/Conv ensemble (single-job) |
@@ -100,6 +101,7 @@ Results are saved to `data/benchmark/results/metrics/methods/<method>/` and `dat
 │   ├── jn_ap_op2/
 │   ├── nn_retraining_with_pseudolabels/
 │   ├── nn_retraining_with_pseudolabels_fingerprints/
+│   ├── nn_retraining_with_pseudolabels_embeddings/
 │   ├── scape/
 │   ├── transformer_ensemble/
 │   └── lgc_ensemble_direct/
@@ -118,6 +120,7 @@ Results are saved to `data/benchmark/results/metrics/methods/<method>/` and `dat
 │   │   ├── jn_ap_op2/
 │   │   ├── nn_retraining_with_pseudolabels/
 │   │   ├── nn_retraining_with_pseudolabels_fingerprints/
+│   │   ├── nn_retraining_with_pseudolabels_embeddings/
 │   │   ├── scape/
 │   │   ├── transformer_ensemble/
 │   │   ├── lgc_ensemble_direct/       # Single-job LGC ensemble entry point
@@ -145,6 +148,7 @@ logs/
 │   ├── jn_ap_op2/
 │   ├── nn_retraining_with_pseudolabels/
 │   ├── nn_retraining_with_pseudolabels_fingerprints/
+│   ├── nn_retraining_with_pseudolabels_embeddings/
 │   ├── scape/
 │   ├── transformer_ensemble/
 │   └── lgc_ensemble_direct/
@@ -174,6 +178,7 @@ data/
         │   ├── jn_ap_op2/
         │   ├── nn_retraining_with_pseudolabels/
         │   ├── nn_retraining_with_pseudolabels_fingerprints_.../
+        │   ├── nn_retraining_with_pseudolabels_embeddings_.../
         │   ├── scape/
         │   ├── transformer_ensemble/
         │   └── lgc_ensemble_direct/
