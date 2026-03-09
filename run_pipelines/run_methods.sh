@@ -10,6 +10,7 @@ VALID_METHODS=(
     "jn_ap_op2"
     "nn_retraining_with_pseudolabels"
     "nn_retraining_with_pseudolabels_fingerprints"
+    "nn_retraining_with_pseudolabels_embeddings"
     "scape"
     "transformer_ensemble"
     "lgc_ensemble_direct"
