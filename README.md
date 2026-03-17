@@ -46,11 +46,52 @@ Available methods:
 | `nn_retraining_with_pseudolabels` | Neural network with pseudolabel retraining |
 | `nn_retraining_with_pseudolabels_fingerprints` | Neural network with pseudolabel retraining with Morgan Fingerprints |
 | `nn_retraining_with_pseudolabels_embeddings` | Neural network with pseudolabel retraining with molecule embeddings |
+| `nn_retraining_with_pseudolabels_mol_emb` | Generalised NN with pseudolabel retraining supporting multiple molecular embedding modes (see below) |
 | `scape` | SCAPE TF-based model |
 | `transformer_ensemble` | Transformer ensemble |
 | `lgc_ensemble_direct` | LGC LSTM/GRU/Conv ensemble (single-job) |
 
 Predictions are saved to `data/benchmark/results/methods/<method>/predictions.h5ad`.
+
+#### `nn_retraining_with_pseudolabels_mol_emb`
+
+This method is the **general case** that subsumes the three earlier specialised variants:
+
+| Earlier method | Equivalent `mol_emb` configuration |
+|---|---|
+| `nn_retraining_with_pseudolabels` | `--embedding_type none` |
+| `nn_retraining_with_pseudolabels_fingerprints` | `--embedding_type fp --embedding_layer concat` |
+| `nn_retraining_with_pseudolabels_embeddings` | `--embedding_type lpm --embedding_layer concat` |
+
+The method is invoked via its dedicated runner, which wraps the unified pipeline script:
+
+```bash
+./run_pipelines/run_nn_retraining_with_pseudolabels_mol_emb.sh \
+    -D <subsample|original> \
+    -e <lpm|fp|none> \
+    [-l <concat|fixed|trainable>] \
+    [-d]
+```
+
+Options:
+
+| Flag | Values | Default | Description |
+|------|--------|---------|-------------|
+| `-D` | `subsample`, `original` | — | Dataset to use |
+| `-e` | `lpm`, `fp`, `none` | — | Molecular embedding type |
+| `-l` | `concat`, `fixed`, `trainable` | `concat` | How the embedding is integrated into the model |
+| `-d` | flag | off | Project fingerprints through an extra Dense layer before concatenation (`concat` mode only) |
+
+**Embedding layer modes:**
+
+- `concat` — standard learnable embeddings for cell type and compound; external fp/lpm features are appended as a separate input (optionally projected through a Dense layer with `-d`). No external embeddings are used when `-e none`.
+- `fixed` — learnable embeddings for cell types; compound embeddings are **initialised** from fp/lpm features and **frozen** (not updated during training), then projected to `emb_out`.
+- `trainable` — same as `fixed` but compound embedding weights are **fine-tuned** during training.
+
+Output predictions are named:
+- `nn_retraining_with_pseudolabels_mol_emb_<dataset>_none` for `--embedding_type none`
+- `nn_retraining_with_pseudolabels_mol_emb_<dataset>_<type>_concat_<dense|not_dense>` for `concat` mode
+- `nn_retraining_with_pseudolabels_mol_emb_<dataset>_<type>_<fixed|trainable>` for `fixed`/`trainable` modes
 
 ### Step 2b — Run control / baseline methods
 
@@ -102,6 +143,7 @@ Results are saved to `data/benchmark/results/metrics/methods/<method>/` and `dat
 │   ├── nn_retraining_with_pseudolabels/
 │   ├── nn_retraining_with_pseudolabels_fingerprints/
 │   ├── nn_retraining_with_pseudolabels_embeddings/
+│   ├── nn_retraining_with_pseudolabels_mol_emb/   # Unified mol-embedding variant
 │   ├── scape/
 │   ├── transformer_ensemble/
 │   └── lgc_ensemble_direct/
@@ -121,6 +163,7 @@ Results are saved to `data/benchmark/results/metrics/methods/<method>/` and `dat
 │   │   ├── nn_retraining_with_pseudolabels/
 │   │   ├── nn_retraining_with_pseudolabels_fingerprints/
 │   │   ├── nn_retraining_with_pseudolabels_embeddings/
+│   │   ├── nn_retraining_with_pseudolabels_mol_emb/   # Unified mol-embedding variant
 │   │   ├── scape/
 │   │   ├── transformer_ensemble/
 │   │   ├── lgc_ensemble_direct/       # Single-job LGC ensemble entry point
@@ -149,6 +192,7 @@ logs/
 │   ├── nn_retraining_with_pseudolabels/
 │   ├── nn_retraining_with_pseudolabels_fingerprints/
 │   ├── nn_retraining_with_pseudolabels_embeddings/
+│   ├── nn_retraining_with_pseudolabels_mol_emb_<config>/   # One dir per config (dataset+embedding+layer)
 │   ├── scape/
 │   ├── transformer_ensemble/
 │   └── lgc_ensemble_direct/
@@ -178,7 +222,8 @@ data/
         │   ├── jn_ap_op2/
         │   ├── nn_retraining_with_pseudolabels/
         │   ├── nn_retraining_with_pseudolabels_fingerprints_.../
-        │   ├── nn_retraining_with_pseudolabels_embeddings_.../
+│   ├── nn_retraining_with_pseudolabels_embeddings_.../
+│   ├── nn_retraining_with_pseudolabels_mol_emb_<config>/
         │   ├── scape/
         │   ├── transformer_ensemble/
         │   └── lgc_ensemble_direct/
