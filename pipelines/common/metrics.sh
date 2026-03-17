@@ -9,8 +9,37 @@ set -e
 # Computes mean rowwise error and correlation metrics on method predictions.
 # Expects to be called from the project root via run_pipelines/run_metrics.sh.
 #
-# To change parameters, edit the Configuration section below.
+# Options:
+#   -m  Run metrics for a single method only (e.g. methods/my_method or
+#       control_methods/ground_truth). Omit to run for all discovered methods.
+#   -h  Show this help message
 # ============================================================================
+
+# ============================================================================
+# Parse options
+# ============================================================================
+
+METHOD_FILTER=""
+
+while getopts ":m:h" opt; do
+    case $opt in
+        m) METHOD_FILTER=$OPTARG ;;
+        h)
+            echo "Usage: $0 [-m method_name]"
+            echo ""
+            echo "Optional:"
+            echo "  -m  Run metrics for one method only."
+            echo "      Provide the path relative to results/, e.g.:"
+            echo "        methods/nn_retraining_with_pseudolabels_mol_emb_subsample_lpm_concat_dense"
+            echo "        control_methods/ground_truth"
+            echo "      Omit to run for all discovered methods."
+            echo "  -h  Show this help message"
+            exit 0
+            ;;
+        \?) echo "Error: Invalid option -$OPTARG" >&2; exit 1 ;;
+        :)  echo "Error: Option -$OPTARG requires an argument" >&2; exit 1 ;;
+    esac
+done
 
 # ============================================================================
 # Configuration
@@ -28,6 +57,7 @@ PARTITION=cpu_p
 BASE="./data/benchmark"
 RESULTS_DIR="${BASE}/results"
 DE_TEST="${BASE}/resources/datasets/neurips-2023-data/de_test.h5ad"
+DE_TEST_SUBSAMPLE="${BASE}/resources/datasets/neurips-2023-data-subsample/de_test.h5ad"
 DE_TEST_LAYER="clipped_sign_log10_pval"
 PREDICTION_LAYER="prediction"
 OUTPUT_DIR="${BASE}/results/metrics"
@@ -63,6 +93,26 @@ if [ ${#PRED_LIST[@]} -eq 0 ]; then
     exit 0
 fi
 
+# Apply method filter if -m was provided
+if [ -n "${METHOD_FILTER}" ]; then
+    FILTERED=()
+    for entry in "${PRED_LIST[@]}"; do
+        # Match on the last path component (method name) or the full category/name
+        name=$(basename "$entry")
+        if [[ "${entry}" == "${METHOD_FILTER}" || "${name}" == "${METHOD_FILTER}" ]]; then
+            FILTERED+=("${entry}")
+        fi
+    done
+    if [ ${#FILTERED[@]} -eq 0 ]; then
+        echo "> Error: no predictions found matching '${METHOD_FILTER}'." >&2
+        echo "  Available entries:" >&2
+        for e in "${PRED_LIST[@]}"; do echo "    ${e}" >&2; done
+        exit 1
+    fi
+    PRED_LIST=("${FILTERED[@]}")
+    echo "> Filtered to method: ${METHOD_FILTER}"
+fi
+
 SBATCH_PREAMBLE="export PATH=\${HOME}/miniforge3/bin:\${PATH} && \
     export TMPDIR=\${HOME}/tmp && mkdir -p \${TMPDIR} && \
     cd ${PROJECT_ROOT} && \
@@ -74,22 +124,29 @@ SBATCH_PREAMBLE="export PATH=\${HOME}/miniforge3/bin:\${PATH} && \
 # ============================================================================
 
 echo "> Submitting metrics job for ${#PRED_LIST[@]} result(s): ${PRED_LIST[*]}"
-echo "  de_test:    ${DE_TEST}"
+echo "  de_test (full):      ${DE_TEST}"
+echo "  de_test (subsample): ${DE_TEST_SUBSAMPLE}"
 echo "  output_dir: ${OUTPUT_DIR}"
 
 RUN_METRICS=""
 for entry in "${PRED_LIST[@]}"; do
     pred="${RESULTS_DIR}/${entry}/predictions.h5ad"
     out_dir="${OUTPUT_DIR}/${entry}"
+    # subsample methods must be evaluated against the subsampled test set
+    if [[ "${entry}" == *subsample* ]]; then
+        ENTRY_DE_TEST="${DE_TEST_SUBSAMPLE}"
+    else
+        ENTRY_DE_TEST="${DE_TEST}"
+    fi
     RUN_METRICS="${RUN_METRICS} mkdir -p ${out_dir} && \
         Rscript ${SCRIPT_ERROR} \
-            --de_test ${DE_TEST} \
+            --de_test ${ENTRY_DE_TEST} \
             --de_test_layer ${DE_TEST_LAYER} \
             --prediction ${pred} \
             --prediction_layer ${PREDICTION_LAYER} \
             --output ${out_dir}/mean_rowwise_error.h5ad && \
         Rscript ${SCRIPT_CORR} \
-            --de_test ${DE_TEST} \
+            --de_test ${ENTRY_DE_TEST} \
             --de_test_layer ${DE_TEST_LAYER} \
             --prediction ${pred} \
             --prediction_layer ${PREDICTION_LAYER} \
