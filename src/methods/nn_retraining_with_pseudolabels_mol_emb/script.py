@@ -29,7 +29,7 @@ id_map = pd.read_csv(par["id_map"])
 
 de_train_df = anndata_to_dataframe(de_train, par["layer"])
 
-de_train_df = de_train_df.sample(frac=1.0, random_state=42)
+de_train_df = de_train_df.sample(frac=1.0, random_state=par["seed"])
 de_train_df = de_train_df.reset_index(drop=True)
 
 gene_names = list(de_train.var_names)
@@ -44,6 +44,7 @@ emb_df = pd.read_pickle(par["embeddings"]) if par["embedding_type"] != "none" el
 pseudolabel = run_notebook_264(
     de_train_df, id_map, gene_names, par["reps"],
     emb_df, par["embedding_type"], par["use_fp_dense"], par["embedding_layer"],
+    seed=par["seed"],
 )
 
 pseudolabel = pd.concat(
@@ -53,6 +54,7 @@ pseudolabel = pd.concat(
 df = run_notebook_266(
     de_train_df, id_map, pseudolabel, gene_names, par["reps"],
     emb_df, par["embedding_type"], par["use_fp_dense"], par["embedding_layer"],
+    seed=par["seed"],
 )
 
 print('Write output to file', flush=True)

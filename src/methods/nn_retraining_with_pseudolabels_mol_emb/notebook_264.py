@@ -36,6 +36,8 @@ from sklearn.decomposition import TruncatedSVD
 EMBEDDING_COL = {
     "fp": "ECFP:2",
     "lpm": "LPM_emb",
+    "pca_logfc": "PCA.logFC",
+    "pca_t": "PCA.t",
 }
 
 
@@ -120,7 +122,6 @@ def build_fp_weights(le, emb_df, embedding_col):
 # Models
 # -----------------------------------------------------------------------------
 def model_1(lr, emb_out, n_dim, fp_dim=None, use_fp_dense=False, embedding_layer="concat", fp_weights=None):
-    tf.random.set_seed(42)
     inputs, x = _make_inputs(emb_out, embedding_layer, fp_dim, use_fp_dense, fp_weights)
 
     x = Dense(256)(x)
@@ -140,7 +141,6 @@ def model_1(lr, emb_out, n_dim, fp_dim=None, use_fp_dense=False, embedding_layer
 
 
 def model_2(lr, emb_out, dense_1, dense_2, dropout_1, dropout_2, n_dim, fp_dim=None, use_fp_dense=False, embedding_layer="concat", fp_weights=None):
-    tf.random.set_seed(42)
     inputs, x = _make_inputs(emb_out, embedding_layer, fp_dim, use_fp_dense, fp_weights)
 
     x = Dense(dense_1)(x)  # 64 - 512
@@ -232,7 +232,6 @@ def model_4(
 
 
 def model_5(lr, emb_out, n_dim, dropout_1, dropout_2, fp_dim=None, use_fp_dense=False, embedding_layer="concat", fp_weights=None):
-    tf.random.set_seed(42)
     inputs, x = _make_inputs(emb_out, embedding_layer, fp_dim, use_fp_dense, fp_weights)
 
     x = Dense(256)(x)
@@ -255,7 +254,6 @@ def model_5(lr, emb_out, n_dim, dropout_1, dropout_2, fp_dim=None, use_fp_dense=
 
 
 def model_6(lr, emb_out, dense_1, dense_2, n_dim, dropout_1, dropout_2, fp_dim=None, use_fp_dense=False, embedding_layer="concat", fp_weights=None):
-    tf.random.set_seed(42)
     inputs, x = _make_inputs(emb_out, embedding_layer, fp_dim, use_fp_dense, fp_weights)
 
     x = BatchNormalization()(x)
@@ -605,7 +603,10 @@ def predict(
     return pred
 
 
-def run_notebook_264(train_df, test_df, gene_names, reps, emb_df, embedding_type, use_fp_dense=True, embedding_layer="concat"):
+def run_notebook_264(train_df, test_df, gene_names, reps, emb_df, embedding_type, use_fp_dense=True, embedding_layer="concat", seed=42):
+    np.random.seed(seed)
+    tf.random.set_seed(seed)
+
     # determine mins and maxs for later clipping
     original_y = train_df.loc[:, gene_names].values
     mins = original_y.min(axis=0)
