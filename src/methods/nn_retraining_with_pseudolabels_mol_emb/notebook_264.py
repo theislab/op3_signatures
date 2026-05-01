@@ -614,8 +614,9 @@ def run_notebook_264(train_df, test_df, gene_names, reps, emb_df, embedding_type
 
     # determine label encoder
     original_x = train_df[["cell_type", "sm_name"]].values
+    all_x = pd.concat([train_df[["cell_type", "sm_name"]], test_df[["cell_type", "sm_name"]]]).values
     le = LabelEncoder()
-    le.fit(original_x.flat)
+    le.fit(all_x.flat)
     new_names = le.transform(original_x.flat).reshape(-1, 2)
 
     # compute external embeddings for train if needed
