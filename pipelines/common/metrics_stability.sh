@@ -68,8 +68,6 @@ PROJECT_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 PIPELINE_NAME="${PIPELINE_NAME:-metrics_stability}"
 ENV_DIR=./venvs/venvs/metrics
 LOGS_DIR="${LOGS_DIR:-./logs}"
-QOS=cpu_normal
-PARTITION=cpu_p
 
 BASE="${BASE:-./data/benchmark}"
 RESULTS_DIR="${BASE}/results"
@@ -79,8 +77,11 @@ DE_TEST_LAYER="clipped_sign_log10_pval"
 PREDICTION_LAYER="prediction"
 OUTPUT_DIR="${BASE}/results/metrics"
 
-SCRIPT_ERROR="${PROJECT_ROOT}/src/metrics/mean_rowwise_error/script.R"
-SCRIPT_CORR="${PROJECT_ROOT}/src/metrics/mean_rowwise_correlation/script.R"
+SCRIPT_ERROR="./src/metrics/mean_rowwise_error/script.R"
+SCRIPT_CORR="./src/metrics/mean_rowwise_correlation/script.R"
+
+source "${PROJECT_ROOT}/pipelines/common/sbatch_env.sh"
+build_sbatch_args
 
 # ============================================================================
 # Discover stability prediction files
@@ -123,11 +124,7 @@ fi
 
 mkdir -p "${LOGS_DIR}/${PIPELINE_NAME}"
 
-SBATCH_PREAMBLE="export PATH=\${HOME}/miniforge3/bin:\${PATH} && \
-    export TMPDIR=\${HOME}/tmp && mkdir -p \${TMPDIR} && \
-    cd ${PROJECT_ROOT} && \
-    eval \"\$(mamba shell hook --shell bash)\" && \
-    mamba activate ${ENV_DIR}"
+build_sbatch_preamble "${ENV_DIR}"
 
 # ============================================================================
 # Submit job: run metrics for each seed file
@@ -188,13 +185,11 @@ done
 RUN_METRICS="${RUN_METRICS% && }"
 
 sbatch -W \
-    -J ${PIPELINE_NAME} \
-    --partition=${PARTITION} \
-    --qos=${QOS} \
+    -J "${PIPELINE_NAME}" \
+    "${SBATCH_ARGS[@]}" \
     --mem=16G \
     --time=2:00:00 \
     --cpus-per-task=2 \
-    --exclude=supercpu02\
     --output="${LOGS_DIR}/${PIPELINE_NAME}/${PIPELINE_NAME}.%j.out" \
     --error="${LOGS_DIR}/${PIPELINE_NAME}/${PIPELINE_NAME}.%j.err" \
     --wrap="${SBATCH_PREAMBLE} && ${RUN_METRICS}"

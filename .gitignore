@@ -78,6 +78,14 @@ target/
 # Jupyter Notebook
 .ipynb_checkpoints
 
+# Project-local generated data and machine-specific resources
+data/
+data_archive/
+logs/
+external/
+checkpoints/
+venvs/venvs/
+
 # IPython
 profile_default/
 ipython_config.py

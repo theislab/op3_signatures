@@ -146,11 +146,12 @@ fi
 
 ENV_DIR=./venvs/venvs/nn_retraining_with_pseudolabels
 LOGS_DIR=./logs
-QOS=gpu_normal
-PARTITION=gpu_p
 
 BASE="./data/benchmark"
 DATA_BASE="${BASE}/resources/datasets/${DATA_DIR}"
+
+source "${PROJECT_ROOT}/pipelines/common/sbatch_env.sh"
+build_sbatch_args
 
 DE_TRAIN="${DATA_BASE}/de_train.h5ad"
 ID_MAP="${DATA_BASE}/id_map.csv"
@@ -189,11 +190,7 @@ fi
 
 mkdir -p "$(dirname "${OUTPUT}")" "${LOGS_DIR}/methods/${PIPELINE_NAME}"
 
-SBATCH_PREAMBLE="export PATH=\${HOME}/miniforge3/bin:\${PATH} && \
-    export TMPDIR=\${HOME}/tmp && mkdir -p \${TMPDIR} && \
-    cd ${PROJECT_ROOT} && \
-    eval \"\$(mamba shell hook --shell bash)\" && \
-    mamba activate ${ENV_DIR}"
+build_sbatch_preamble "${ENV_DIR}"
 
 # ============================================================================
 # Submit job
@@ -215,9 +212,8 @@ echo "  reps:               ${REPS}"
 echo "  output:             ${OUTPUT}"
 
 sbatch -W \
-    -J ${PIPELINE_NAME} \
-    --partition=${PARTITION} \
-    --qos=${QOS} \
+    -J "${PIPELINE_NAME}" \
+    "${SBATCH_ARGS[@]}" \
     --mem=64G \
     --time=8:00:00 \
     --cpus-per-task=4 \

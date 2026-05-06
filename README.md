@@ -12,15 +12,46 @@ mamba env create -f venvs/configs/nn_retraining_with_pseudolabels/env.yaml -p ./
 mamba env create -f venvs/configs/metrics/env.yaml       -p ./venvs/venvs/metrics -y
 ```
 
-For the Jupyter notebooks under `notebooks/` (see [Jupyter notebooks](#jupyter-notebooks) below), create the analysis env at `~/notebook_venv`:
+For the Jupyter notebooks under `notebooks/` (see [Jupyter notebooks](#jupyter-notebooks) below), create the analysis env inside the project:
 
 ```bash
-mamba env create -f venvs/configs/notebook/env.yaml -p ~/notebook_venv -y
+mamba env create -f venvs/configs/notebook/env.yaml -p ./venvs/venvs/notebook -y
+```
+
+### Scheduler configuration
+
+The pipeline scripts submit SLURM jobs, but site-specific settings are not
+committed. Set these environment variables before running a pipeline if your
+cluster requires them:
+
+```bash
+export SBATCH_PARTITION=<partition>
+export SBATCH_QOS=<qos>
+export SBATCH_EXCLUDE=<node_list>
+export MAMBA_BIN_DIR=<path_to_mamba_bin>
+export JOB_TMPDIR=<scratch_or_tmp_dir>
 ```
 
 ## Running the benchmark
 
 All commands must be run from the **project root**.
+
+### Reproducibility inputs
+
+The repository tracks code, environment definitions, and the small intermediate
+tables under `files/` that notebook 02 uses to create OP3-compatible embedding
+pickles. The large benchmark datasets, predictions, metrics, logs, optional
+checkpoints, and local environment directories are generated locally and are not
+tracked.
+
+Inputs used by the default workflow:
+
+| Input | Location | How to obtain |
+|---|---|---|
+| NeurIPS-2023 perturbation data | `data/benchmark/resources/datasets/neurips-2023-data/` | Run Step 1 |
+| PubChem mapping | `files/df_pubchem_op3.csv` | Tracked in this repo |
+| Extracted LPM perturbation tables | `files/single_run_*_25_epochs/epoch_epoch_0019/df_pert.pkl` | Tracked in this repo |
+| OP3 embedding pickles | `data/benchmark/resources/datasets/neurips-2023-data-subsample/op3_emb_*.pkl` | Run notebook 02 |
 
 ### Step 1 — Download datasets
 
@@ -35,8 +66,10 @@ Downloads `de_train.h5ad`, `de_test.h5ad`, and `id_map.csv` from S3 to
 
 > **Prerequisite:** the stability pipeline reads `op3_emb_*.pkl` from
 > `data/benchmark/resources/datasets/neurips-2023-data-subsample/`. Generate
-> them first by running [notebooks 01 and 02](#jupyter-notebooks) (or copy
-> existing pickles from `data_archive/`).
+> them first by running [notebook 02](#jupyter-notebooks), or provide compatible
+> precomputed pickles at that path. Notebook 01 is only needed if regenerating
+> the tracked `files/single_run_*_25_epochs/.../df_pert.pkl` tables from LPM
+> checkpoints.
 
 Runs `nn_retraining_with_pseudolabels_mol_emb_learning_missed` as a multi-seed
 stability sweep across LPM/FP embedding versions. The top-level script
@@ -111,11 +144,11 @@ Results are saved to
 ## Jupyter notebooks
 
 Exploratory and post-hoc analysis lives under `notebooks/`. All notebooks are
-intended to be run from the `~/notebook_venv` mamba environment created in
+intended to be run from the project-local mamba environment created in
 [Setup](#setup):
 
 ```bash
-mamba activate ~/notebook_venv
+mamba activate ./venvs/venvs/notebook
 jupyter lab   # or: jupyter notebook
 ```
 
@@ -128,8 +161,10 @@ jupyter lab   # or: jupyter notebook
 #### Prerequisites for notebook 01
 
 Notebook 01 needs a source checkout of [perturb-lib](https://github.com/perturblib/perturblib)
-at `~/lpm_style/` and a trained LPM checkpoint (see the upstream repo for
-training). **Do not** `pip install perturblib` — it shadows the local fork.
+at `external/perturb-lib/` and a trained LPM checkpoint (see the upstream repo
+for training). Set `PERTURB_LIB_ROOT`, `LPM_ALL_CHECKPOINT_ROOT`, or
+`LPM_L1000_CHECKPOINT_ROOT` to override those project-local defaults. **Do not**
+`pip install perturblib` — it shadows the local fork.
 
 Skip notebook 01 if you already have `op3_emb_*.pkl` pickles.
 
@@ -137,7 +172,8 @@ Skip notebook 01 if you already have `op3_emb_*.pkl` pickles.
 
 ```
 ├── data/                              # Downloaded datasets and results (not tracked by git)
-├── notebooks/                         # Jupyter notebooks (run via the ~/notebook_venv mamba env)
+├── external/                          # Optional local source checkouts (not tracked by git)
+├── notebooks/                         # Jupyter notebooks (run via the project-local mamba env)
 ├── pipelines/                         # Pipeline scripts (sbatch jobs)
 │   ├── common/                        # Shared pipelines (data fetching, metrics, stability metrics)
 │   └── nn_retraining_with_pseudolabels_mol_emb_learning_missed/
@@ -155,7 +191,7 @@ Skip notebook 01 if you already have `op3_emb_*.pkl` pickles.
     │   ├── fetching_data/
     │   ├── nn_retraining_with_pseudolabels/
     │   ├── metrics/
-    │   └── notebook/                  # Jupyter / analysis env (installed at ~/notebook_venv)
+    │   └── notebook/                  # Jupyter / analysis env
     └── venvs/                         # Installed environments (not tracked by git)
 ```
 

@@ -22,11 +22,12 @@ PROJECT_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 PIPELINE_NAME="fetching_data"
 ENV_DIR=./venvs/venvs/fetching_data
 LOGS_DIR=./logs
-QOS=cpu_normal
-PARTITION=cpu_p
 
 BASE="./data/benchmark"
 DATA_ROOT="${BASE}/resources/datasets/neurips-2023-data"
+
+source "${PROJECT_ROOT}/pipelines/common/sbatch_env.sh"
+build_sbatch_args
 
 # ============================================================================
 # Setup
@@ -34,11 +35,7 @@ DATA_ROOT="${BASE}/resources/datasets/neurips-2023-data"
 
 mkdir -p "${DATA_ROOT}" "${LOGS_DIR}/${PIPELINE_NAME}"
 
-SBATCH_PREAMBLE="export PATH=\${HOME}/miniforge3/bin:\${PATH} && \
-    export TMPDIR=\${HOME}/tmp && mkdir -p \${TMPDIR} && \
-    cd ${PROJECT_ROOT} && \
-    eval \"\$(mamba shell hook --shell bash)\" && \
-    mamba activate ${ENV_DIR}"
+build_sbatch_preamble "${ENV_DIR}"
 
 # ============================================================================
 # Submit job
@@ -48,9 +45,8 @@ echo "> Submitting data fetching job"
 echo "  data_root: ${DATA_ROOT}"
 
 sbatch -W \
-    -J ${PIPELINE_NAME} \
-    --partition=${PARTITION} \
-    --qos=${QOS} \
+    -J "${PIPELINE_NAME}" \
+    "${SBATCH_ARGS[@]}" \
     --mem=16G \
     --time=2:00:00 \
     --cpus-per-task=2 \
