@@ -3,17 +3,17 @@
 set -e
 
 # ============================================================================
-# Stability metrics pipeline
+# Stability metrics pipeline (learning_missed flavour)
 # ============================================================================
 #
 # Computes mean rowwise error and correlation metrics on all seed-based
-# prediction files produced by the stability runner.
+# prediction files produced by the learning_missed stability runner.
 #
 # Predictions are expected at:
-#   results/methods/<method>/<stability_subfolder>/predictions_seed_<n>.h5ad
+#   data_lpm_style_learning_missed/benchmark/results/methods/<method>/<stability_subfolder>/predictions_seed_<n>.h5ad
 #
 # Metrics are saved to:
-#   results/metrics/methods/<method>/<stability_subfolder>/seed_<n>/
+#   data_lpm_style_learning_missed/benchmark/results/metrics/methods/<method>/<stability_subfolder>/seed_<n>/
 #
 # Options:
 #   -m  Restrict to one method name (matches against the method dir name).
@@ -39,7 +39,7 @@ while getopts ":m:b:h" opt; do
             echo ""
             echo "Optional:"
             echo "  -m  Restrict to one method by name, e.g.:"
-            echo "        nn_retraining_with_pseudolabels_mol_emb_subsample_none"
+            echo "        nn_retraining_with_pseudolabels_mol_emb_learning_missed_subsample_none"
             echo "      Omit to process all methods with stability predictions."
             echo "  -b  Stability subfolder name to read predictions from and write metrics to"
             echo "      (default: stability)"
@@ -58,13 +58,13 @@ done
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 
-PIPELINE_NAME="metrics_stability"
+PIPELINE_NAME="metrics_stability_learning_missed"
 ENV_DIR=./venvs/venvs/metrics
-LOGS_DIR=./logs
+LOGS_DIR=./logs_learning_missed
 QOS=cpu_normal
 PARTITION=cpu_p
 
-BASE="./data/benchmark"
+BASE="./data_lpm_style_learning_missed/benchmark"
 RESULTS_DIR="${BASE}/results"
 DE_TEST="${BASE}/resources/datasets/neurips-2023-data/de_test.h5ad"
 DE_TEST_SUBSAMPLE="${BASE}/resources/datasets/neurips-2023-data-subsample/de_test.h5ad"

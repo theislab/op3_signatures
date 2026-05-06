@@ -120,13 +120,14 @@ if [ -z "${STABILITY_SUBFOLDER}" ]; then
     fi
 fi
 
+PIPELINE_PREFIX="nn_retraining_with_pseudolabels_mol_emb_learning_missed"
 if [ "$EMBEDDING_TYPE" = "none" ]; then
-    PIPELINE_NAME="nn_retraining_with_pseudolabels_mol_emb_${DATASET_LABEL}_none"
+    PIPELINE_NAME="${PIPELINE_PREFIX}_${DATASET_LABEL}_none"
 elif [ "$EMBEDDING_LAYER" = "concat" ]; then
     DENSE_SUFFIX=$([ "$USE_FP_DENSE" = true ] && echo "dense" || echo "not_dense")
-    PIPELINE_NAME="nn_retraining_with_pseudolabels_mol_emb_${DATASET_LABEL}_${EMBEDDING_TYPE}_concat_${DENSE_SUFFIX}"
+    PIPELINE_NAME="${PIPELINE_PREFIX}_${DATASET_LABEL}_${EMBEDDING_TYPE}_concat_${DENSE_SUFFIX}"
 else
-    PIPELINE_NAME="nn_retraining_with_pseudolabels_mol_emb_${DATASET_LABEL}_${EMBEDDING_TYPE}_${EMBEDDING_LAYER}"
+    PIPELINE_NAME="${PIPELINE_PREFIX}_${DATASET_LABEL}_${EMBEDDING_TYPE}_${EMBEDDING_LAYER}"
 fi
 
 # Auto-derive tag from embedding filename if -T not given.
@@ -144,11 +145,11 @@ if [ -n "${EMBEDDING_TAG}" ] && [ "$EMBEDDING_TYPE" != "none" ]; then
 fi
 
 ENV_DIR=./venvs/venvs/nn_retraining_with_pseudolabels
-LOGS_DIR=./logs
-QOS=gpu_preemptible
+LOGS_DIR=./logs_learning_missed
+QOS=gpu_normal
 PARTITION=gpu_p
 
-BASE="./data/benchmark"
+BASE="./data_lpm_style_learning_missed/benchmark"
 DATA_BASE="${BASE}/resources/datasets/${DATA_DIR}"
 
 DE_TRAIN="${DATA_BASE}/de_train.h5ad"
@@ -225,7 +226,7 @@ sbatch -W \
     --error="${LOGS_DIR}/methods/${PIPELINE_NAME}/${PIPELINE_NAME}.%j.err" \
     --wrap="${SBATCH_PREAMBLE} && \
         export TF_USE_LEGACY_KERAS=1 && \
-        python3 -m src.methods.nn_retraining_with_pseudolabels_mol_emb.script \
+        python3 -m src.methods.nn_retraining_with_pseudolabels_mol_emb_learning_missed.script \
             --de_train ${DE_TRAIN} \
             --id_map ${ID_MAP} \
             ${EMBEDDINGS_FLAG} \
