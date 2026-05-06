@@ -12,6 +12,12 @@ mamba env create -f venvs/configs/nn_retraining_with_pseudolabels/env.yaml -p ./
 mamba env create -f venvs/configs/metrics/env.yaml       -p ./venvs/venvs/metrics -y
 ```
 
+For the Jupyter notebooks under `notebooks/` (see [Jupyter notebooks](#jupyter-notebooks) below), create the analysis env at `~/notebook_venv`:
+
+```bash
+mamba env create -f venvs/configs/notebook/env.yaml -p ~/notebook_venv -y
+```
+
 ## Running the benchmark
 
 All commands must be run from the **project root**.
@@ -26,6 +32,11 @@ Downloads `de_train.h5ad`, `de_test.h5ad`, and `id_map.csv` from S3 to
 ```
 
 ### Step 2 — Run the prediction pipeline
+
+> **Prerequisite:** the stability pipeline reads `op3_emb_*.pkl` from
+> `data/benchmark/resources/datasets/neurips-2023-data-subsample/`. Generate
+> them first by running [notebooks 01 and 02](#jupyter-notebooks) (or copy
+> existing pickles from `data_archive/`).
 
 Runs `nn_retraining_with_pseudolabels_mol_emb_learning_missed` as a multi-seed
 stability sweep across LPM/FP embedding versions. The top-level script
@@ -97,10 +108,60 @@ Computes mean rowwise error (RMSE, MAE) and mean rowwise correlation
 Results are saved to
 `data/benchmark/results/metrics/methods/<pipeline>/stability/seed_<n>/`.
 
+## Jupyter notebooks
+
+Exploratory and post-hoc analysis lives under `notebooks/`. All notebooks are
+intended to be run from the `~/notebook_venv` mamba environment created in
+[Setup](#setup):
+
+```bash
+mamba activate ~/notebook_venv
+jupyter lab   # or: jupyter notebook
+```
+
+| Notebook | Purpose |
+|---|---|
+| `01_get_precomputed_LPM_based_embeddings.ipynb` | Extract embedding tables from a trained LPM checkpoint. Run **before** Step 2. |
+| `02_match_LPM_based_embeddings_with_OP3.ipynb` | Match LPM embeddings to OP3 compounds + Morgan FPs → writes the `op3_emb_*.pkl` files consumed by Step 2. Run **before** Step 2. |
+| `03_plotting_model_results.ipynb` | Aggregate stability metrics and plot results. Run **after** Step 3. |
+
+### Prerequisites for notebook 01 (LPM checkpoint loader)
+
+`01_get_precomputed_LPM_based_embeddings.ipynb` is the only notebook that
+depends on the upstream LPM codebase, [perturb-lib](https://github.com/perturblib/perturblib).
+It expects a **source checkout** sitting at `~/lpm_style/` (a fork or clone of
+`perturb-lib`) and at least one trained LPM checkpoint under
+`~/lpm_style/.plib_cache/results/...`. The notebook injects the local source
+into `sys.path` at import time:
+
+```python
+LPM_STYLE_ROOT = "../../lpm_style"
+sys.path = [LPM_STYLE_ROOT] + [p for p in sys.path if "perturblib" not in p and p != LPM_STYLE_ROOT]
+```
+
+Two important caveats:
+
+1. **Do not `pip install perturblib`** in the `~/notebook_venv` env. The notebook's
+   `sys.path` filter explicitly drops any entry containing `"perturblib"` so the
+   local fork wins; a pip-installed copy would shadow your local source if the
+   filter ever fails, and the assertion at the bottom of the import cell
+   (`"lpm_style" in inspect.getfile(plib)`) is there to catch exactly that.
+2. **Training new LPM checkpoints** lives in the upstream repo, not here. Follow
+   the [perturb-lib README](https://github.com/perturblib/perturblib) — e.g.
+   `poetry run python -m perturb_gym.training train_from_config_file --config_file_id_or_path=lincs_paper_lpm`
+   — and the resulting `.ckpt` files will appear under
+   `~/lpm_style/.plib_cache/results/<run_name>/LPM_<hash>/seed_<n>/checkpoints/`.
+
+If you only want to **run the stability pipeline + metrics** (Steps 1–3 above)
+on existing pickles, you can skip notebook 01 entirely — the
+`op3_emb_*.pkl` files in your `data/benchmark/resources/datasets/neurips-2023-data-subsample/`
+tree are all that's needed.
+
 ## Project structure
 
 ```
 ├── data/                              # Downloaded datasets and results (not tracked by git)
+├── notebooks/                         # Jupyter notebooks (run via the ~/notebook_venv mamba env)
 ├── pipelines/                         # Pipeline scripts (sbatch jobs)
 │   ├── common/                        # Shared pipelines (data fetching, metrics, stability metrics)
 │   └── nn_retraining_with_pseudolabels_mol_emb_learning_missed/
@@ -114,7 +175,11 @@ Results are saved to
 │   ├── metrics/                       # Evaluation metric scripts (R)
 │   └── utils/                         # Shared utilities
 └── venvs/
-    ├── configs/                       # Conda environment definitions (env.yaml per method)
+    ├── configs/                       # Conda environment definitions (env.yaml per env)
+    │   ├── fetching_data/
+    │   ├── nn_retraining_with_pseudolabels/
+    │   ├── metrics/
+    │   └── notebook/                  # Jupyter / analysis env (installed at ~/notebook_venv)
     └── venvs/                         # Installed environments (not tracked by git)
 ```
 

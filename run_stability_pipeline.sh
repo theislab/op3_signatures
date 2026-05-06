@@ -21,7 +21,7 @@ set -e
 
 EPOCHS=("$@")
 if [ "${#EPOCHS[@]}" -eq 0 ]; then
-    EPOCHS=(30 35 40 45 50)
+    EPOCHS=(20)
 fi
 
 RUNNER=./run_pipelines/run_nn_retraining_with_pseudolabels_mol_emb_stability.sh
@@ -34,7 +34,7 @@ RUNNER=./run_pipelines/run_nn_retraining_with_pseudolabels_mol_emb_stability.sh
 FP_FILE="op3_emb_fp.pkl"
 
 # Run the embedding-free baseline once (no need to repeat per epoch).
-#"$RUNNER" -e none -D subsample
+"$RUNNER" -e none -D subsample
 
 # Fingerprint (fp / ECFP:2) embeddings are deterministic from molecular
 # structure -- they don't change with LPM training epoch -- so run them once.
@@ -44,8 +44,8 @@ FP_FILE="op3_emb_fp.pkl"
 #echo "============================================================"
 #"$RUNNER" -e fp -l concat    -D subsample      -f "$FP_FILE"
 #"$RUNNER" -e fp -l concat -d -D subsample      -f "$FP_FILE"
-#"$RUNNER" -e fp -l fixed     -D subsample      -f "$FP_FILE"
-#"$RUNNER" -e fp -l trainable -D subsample      -f "$FP_FILE"
+"$RUNNER" -e fp -l fixed     -D subsample      -f "$FP_FILE"
+"$RUNNER" -e fp -l trainable -D subsample      -f "$FP_FILE"
 
 # lpm embeddings DO change with epoch, so sweep them.
 for E in "${EPOCHS[@]}"; do
@@ -54,9 +54,9 @@ for E in "${EPOCHS[@]}"; do
     echo "============================================================"
     echo "  Sweeping epoch ${E}  (embedding file: ${EMB_FILE})"
     echo "============================================================"
-    "$RUNNER" -e lpm -l concat    -D subsample      -f "$EMB_FILE"
-    "$RUNNER" -e lpm -l concat -d -D subsample      -f "$EMB_FILE"
-    "$RUNNER" -e lpm -l fixed     -D subsample      -f "$EMB_FILE"
+    #"$RUNNER" -e lpm -l concat    -D subsample      -f "$EMB_FILE"
+    #"$RUNNER" -e lpm -l concat -d -D subsample      -f "$EMB_FILE"
+    #"$RUNNER" -e lpm -l fixed     -D subsample      -f "$EMB_FILE"
     "$RUNNER" -e lpm -l trainable -D subsample      -f "$EMB_FILE"
 done
 
@@ -70,8 +70,8 @@ for E in "${EPOCHS[@]}"; do
     echo "============================================================"
     echo "  Sweeping epoch ${E}  (embedding file: ${EMB_FILE})"
     echo "============================================================"
-    "$RUNNER" -e lpm -l concat    -D subsample      -f "$EMB_FILE"
-    "$RUNNER" -e lpm -l concat -d -D subsample      -f "$EMB_FILE"
-    "$RUNNER" -e lpm -l fixed     -D subsample      -f "$EMB_FILE"
+    #"$RUNNER" -e lpm -l concat    -D subsample      -f "$EMB_FILE"
+    #"$RUNNER" -e lpm -l concat -d -D subsample      -f "$EMB_FILE"
+    #"$RUNNER" -e lpm -l fixed     -D subsample      -f "$EMB_FILE"
     "$RUNNER" -e lpm -l trainable -D subsample      -f "$EMB_FILE"
 done
