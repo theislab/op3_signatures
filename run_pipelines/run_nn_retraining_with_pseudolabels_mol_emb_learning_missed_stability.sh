@@ -3,11 +3,11 @@
 set -e
 
 # ============================================================================
-# Stability runner: NN retraining with pseudolabels — multiple seeds
+# Stability runner: NN retraining with pseudolabels (learning_missed) — multiple seeds
 # ============================================================================
 #
 # Submits one sbatch job per seed. Predictions are saved under:
-#   data/benchmark/results/methods/<pipeline_name>/stability/predictions_seed_<n>.h5ad
+#   data_lpm_style_learning_missed/benchmark/results/methods/<pipeline_name>/stability/predictions_seed_<n>.h5ad
 #
 # Options:
 #   -e  Embedding type: lpm, fp, pca_logfc, pca_t, or none  (default: none)
@@ -26,13 +26,13 @@ set -e
 #   -h  Show this help message
 #
 # Examples:
-#   ./run_pipelines/run_nn_retraining_with_pseudolabels_mol_emb_stability.sh \
+#   ./run_pipelines/run_nn_retraining_with_pseudolabels_mol_emb_learning_missed_stability.sh \
 #       -e none -D subsample -S 0,1,2,3,4
-#   ./run_pipelines/run_nn_retraining_with_pseudolabels_mol_emb_stability.sh \
+#   ./run_pipelines/run_nn_retraining_with_pseudolabels_mol_emb_learning_missed_stability.sh \
 #       -e fp -l concat -d -D original -S 0,1,2
 # ============================================================================
 
-PIPELINE="nn_retraining_with_pseudolabels_mol_emb"
+PIPELINE="nn_retraining_with_pseudolabels_mol_emb_learning_missed"
 PIPELINE_SCRIPT="./pipelines/${PIPELINE}/${PIPELINE}.sh"
 
 EMBEDDING_TYPE="none"
@@ -47,7 +47,7 @@ EMBEDDING_TAG=""
 STABILITY_SUBFOLDER=""   # auto: stability_pca_<version> when -P is set, else stability
 SEEDS="0,1,2,3,4,10,11,12,13,14"
 
-LOGS_DIR=./logs
+LOGS_DIR=./logs_learning_missed
 
 while getopts ":e:l:D:P:f:T:b:S:dh" opt; do
     case $opt in
@@ -164,4 +164,4 @@ done
 
 echo ""
 echo "> All seeds submitted. Predictions will be saved to:"
-echo "  data/benchmark/results/methods/${BASE_LABEL}/${STABILITY_SUBFOLDER}/predictions_seed_<n>.h5ad"
+echo "  data_lpm_style_learning_missed/benchmark/results/methods/${BASE_LABEL}/${STABILITY_SUBFOLDER}/predictions_seed_<n>.h5ad"
