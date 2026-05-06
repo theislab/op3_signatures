@@ -125,37 +125,13 @@ jupyter lab   # or: jupyter notebook
 | `02_match_LPM_based_embeddings_with_OP3.ipynb` | Match LPM embeddings to OP3 compounds + Morgan FPs → writes the `op3_emb_*.pkl` files consumed by Step 2. Run **before** Step 2. |
 | `03_plotting_model_results.ipynb` | Aggregate stability metrics and plot results. Run **after** Step 3. |
 
-### Prerequisites for notebook 01 (LPM checkpoint loader)
+#### Prerequisites for notebook 01
 
-`01_get_precomputed_LPM_based_embeddings.ipynb` is the only notebook that
-depends on the upstream LPM codebase, [perturb-lib](https://github.com/perturblib/perturblib).
-It expects a **source checkout** sitting at `~/lpm_style/` (a fork or clone of
-`perturb-lib`) and at least one trained LPM checkpoint under
-`~/lpm_style/.plib_cache/results/...`. The notebook injects the local source
-into `sys.path` at import time:
+Notebook 01 needs a source checkout of [perturb-lib](https://github.com/perturblib/perturblib)
+at `~/lpm_style/` and a trained LPM checkpoint (see the upstream repo for
+training). **Do not** `pip install perturblib` — it shadows the local fork.
 
-```python
-LPM_STYLE_ROOT = "../../lpm_style"
-sys.path = [LPM_STYLE_ROOT] + [p for p in sys.path if "perturblib" not in p and p != LPM_STYLE_ROOT]
-```
-
-Two important caveats:
-
-1. **Do not `pip install perturblib`** in the `~/notebook_venv` env. The notebook's
-   `sys.path` filter explicitly drops any entry containing `"perturblib"` so the
-   local fork wins; a pip-installed copy would shadow your local source if the
-   filter ever fails, and the assertion at the bottom of the import cell
-   (`"lpm_style" in inspect.getfile(plib)`) is there to catch exactly that.
-2. **Training new LPM checkpoints** lives in the upstream repo, not here. Follow
-   the [perturb-lib README](https://github.com/perturblib/perturblib) — e.g.
-   `poetry run python -m perturb_gym.training train_from_config_file --config_file_id_or_path=lincs_paper_lpm`
-   — and the resulting `.ckpt` files will appear under
-   `~/lpm_style/.plib_cache/results/<run_name>/LPM_<hash>/seed_<n>/checkpoints/`.
-
-If you only want to **run the stability pipeline + metrics** (Steps 1–3 above)
-on existing pickles, you can skip notebook 01 entirely — the
-`op3_emb_*.pkl` files in your `data/benchmark/resources/datasets/neurips-2023-data-subsample/`
-tree are all that's needed.
+Skip notebook 01 if you already have `op3_emb_*.pkl` pickles.
 
 ## Project structure
 
