@@ -10,8 +10,8 @@ set -e
 # Expects to be called from the project root via run_pipelines/run_metrics.sh.
 #
 # Options:
-#   -m  Run metrics for a single method only (e.g. methods/my_method or
-#       control_methods/ground_truth). Omit to run for all discovered methods.
+#   -m  Run metrics for a single method only (e.g. methods/my_method).
+#       Omit to run for all discovered methods.
 #   -h  Show this help message
 # ============================================================================
 
@@ -31,7 +31,6 @@ while getopts ":m:h" opt; do
             echo "  -m  Run metrics for one method only."
             echo "      Provide the path relative to results/, e.g.:"
             echo "        methods/nn_retraining_with_pseudolabels_mol_emb_subsample_lpm_concat_dense"
-            echo "        control_methods/ground_truth"
             echo "      Omit to run for all discovered methods."
             echo "  -h  Show this help message"
             exit 0
@@ -71,25 +70,22 @@ SCRIPT_CORR="${PROJECT_ROOT}/src/metrics/mean_rowwise_correlation/script.R"
 
 mkdir -p "${OUTPUT_DIR}" "${LOGS_DIR}/${PIPELINE_NAME}"
 
-# Discover all methods and control_methods that have predictions
-# (results/methods/<name>/predictions.h5ad and results/control_methods/<name>/predictions.h5ad)
+# Discover all methods that have predictions
+# (results/methods/<name>/predictions.h5ad)
 PRED_LIST=()
-for category in methods control_methods; do
-    cat_dir="${RESULTS_DIR}/${category}"
-    if [ ! -d "${cat_dir}" ]; then
-        continue
-    fi
+cat_dir="${RESULTS_DIR}/methods"
+if [ -d "${cat_dir}" ]; then
     for d in "${cat_dir}"/*/; do
         [ -d "$d" ] || continue
         name=$(basename "$d")
         if [ -f "${d}/predictions.h5ad" ]; then
-            PRED_LIST+=("${category}/${name}")
+            PRED_LIST+=("methods/${name}")
         fi
     done
-done
+fi
 
 if [ ${#PRED_LIST[@]} -eq 0 ]; then
-    echo "> No prediction files found under ${RESULTS_DIR}/methods/ or ${RESULTS_DIR}/control_methods/. Nothing to do."
+    echo "> No prediction files found under ${RESULTS_DIR}/methods/. Nothing to do."
     exit 0
 fi
 
@@ -167,4 +163,4 @@ sbatch -W \
     --wrap="${SBATCH_PREAMBLE} && ${RUN_METRICS}"
 
 echo "> Metrics computation completed"
-echo "> Results saved under: ${OUTPUT_DIR}/methods/<name>/ and ${OUTPUT_DIR}/control_methods/<name>/"
+echo "> Results saved under: ${OUTPUT_DIR}/methods/<name>/"

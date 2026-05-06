@@ -10,10 +10,10 @@ set -e
 # prediction files produced by the stability runner.
 #
 # Predictions are expected at:
-#   results/methods/<method>/<stability_subfolder>/predictions_seed_<n>.h5ad
+#   ${BASE}/results/methods/<method>/<stability_subfolder>/predictions_seed_<n>.h5ad
 #
 # Metrics are saved to:
-#   results/metrics/methods/<method>/<stability_subfolder>/seed_<n>/
+#   ${BASE}/results/metrics/methods/<method>/<stability_subfolder>/seed_<n>/
 #
 # Options:
 #   -m  Restrict to one method name (matches against the method dir name).
@@ -21,6 +21,13 @@ set -e
 #   -b  Stability subfolder name to read predictions from and write metrics to
 #       (default: stability)
 #   -h  Show this help message
+#
+# Env-var overrides (used by alternate flavours of the pipeline, e.g.
+# learning_missed):
+#   BASE           Data root containing results/ and resources/ subtrees
+#                  (default: ./data/benchmark)
+#   LOGS_DIR       Where sbatch logs are written (default: ./logs)
+#   PIPELINE_NAME  SLURM job name and log subfolder (default: metrics_stability)
 # ============================================================================
 
 # ============================================================================
@@ -58,13 +65,13 @@ done
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 
-PIPELINE_NAME="metrics_stability"
+PIPELINE_NAME="${PIPELINE_NAME:-metrics_stability}"
 ENV_DIR=./venvs/venvs/metrics
-LOGS_DIR=./logs
+LOGS_DIR="${LOGS_DIR:-./logs}"
 QOS=cpu_normal
 PARTITION=cpu_p
 
-BASE="./data/benchmark"
+BASE="${BASE:-./data/benchmark}"
 RESULTS_DIR="${BASE}/results"
 DE_TEST="${BASE}/resources/datasets/neurips-2023-data/de_test.h5ad"
 DE_TEST_SUBSAMPLE="${BASE}/resources/datasets/neurips-2023-data-subsample/de_test.h5ad"

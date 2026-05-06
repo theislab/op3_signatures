@@ -145,11 +145,11 @@ if [ -n "${EMBEDDING_TAG}" ] && [ "$EMBEDDING_TYPE" != "none" ]; then
 fi
 
 ENV_DIR=./venvs/venvs/nn_retraining_with_pseudolabels
-LOGS_DIR=./logs_learning_missed
+LOGS_DIR=./logs
 QOS=gpu_normal
 PARTITION=gpu_p
 
-BASE="./data_lpm_style_learning_missed/benchmark"
+BASE="./data/benchmark"
 DATA_BASE="${BASE}/resources/datasets/${DATA_DIR}"
 
 DE_TRAIN="${DATA_BASE}/de_train.h5ad"
