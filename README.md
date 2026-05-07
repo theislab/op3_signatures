@@ -35,8 +35,7 @@ Downloads `de_train.h5ad`, `de_test.h5ad`, and `id_map.csv` from S3 to
 
 > **Prerequisite:** the stability pipeline reads `op3_emb_*.pkl` from
 > `data/benchmark/resources/datasets/neurips-2023-data-subsample/`. Generate
-> them first by running [notebooks 01 and 02](#jupyter-notebooks) (or copy
-> existing pickles from `data_archive/`).
+> them first by running [notebooks 01 and 02](#jupyter-notebooks).
 
 Runs `nn_retraining_with_pseudolabels_mol_emb_learning_missed` as a multi-seed
 stability sweep across LPM/FP embedding versions. The top-level script
@@ -61,7 +60,7 @@ This method is the **general case** that subsumes earlier specialised variants
 | `nn_retraining_with_pseudolabels_fingerprints` | `--embedding_type fp --embedding_layer concat` |
 | `nn_retraining_with_pseudolabels_embeddings` | `--embedding_type lpm --embedding_layer concat` |
 
-For ad-hoc single-configuration runs, the dedicated stability runner can also be
+For single-configuration runs, the dedicated stability runner can also be
 called directly:
 
 ```bash
@@ -110,7 +109,7 @@ Results are saved to
 
 ## Jupyter notebooks
 
-Exploratory and post-hoc analysis lives under `notebooks/`. All notebooks are
+.ipynb notebooks could be utilized for embddings matching and analysis of final results. All notebooks are
 intended to be run from the `~/notebook_venv` mamba environment created in
 [Setup](#setup):
 
@@ -122,14 +121,14 @@ jupyter lab   # or: jupyter notebook
 | Notebook | Purpose |
 |---|---|
 | `01_get_precomputed_LPM_based_embeddings.ipynb` | Extract embedding tables from a trained LPM checkpoint. Run **before** Step 2. |
-| `02_match_LPM_based_embeddings_with_OP3.ipynb` | Match LPM embeddings to OP3 compounds + Morgan FPs → writes the `op3_emb_*.pkl` files consumed by Step 2. Run **before** Step 2. |
+| `02_match_LPM_based_embeddings_with_OP3.ipynb` | Match LPM embeddings to OP3 compounds + Morgan FPs and write the `op3_emb_*.pkl` files consumed by Step 2. Run **before** Step 2. |
 | `03_plotting_model_results.ipynb` | Aggregate stability metrics and plot results. Run **after** Step 3. |
 
 #### Prerequisites for notebook 01
 
-Notebook 01 needs a source checkout of [perturb-lib](https://github.com/perturblib/perturblib)
-at `~/lpm_style/` and a trained LPM checkpoint (see the upstream repo for
-training). **Do not** `pip install perturblib` — it shadows the local fork.
+Notebook 01 needs the files related to the LPM model to load the model weights,
+so please clone the LPM-based corresponding repository and take follow the instructions
+on installing `perturb_lib` package mentioned in LPM-based repository or in the [original one](https://github.com/perturblib/perturblib/tree/main).
 
 Skip notebook 01 if you already have `op3_emb_*.pkl` pickles.
 
