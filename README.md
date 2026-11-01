@@ -12,6 +12,8 @@ mamba env create -f venvs/configs/nn_retraining_with_pseudolabels/env.yaml -p ./
 mamba env create -f venvs/configs/metrics/env.yaml -p ./venvs/venvs/metrics -y
 ```
 
+For notebook **01**, use the LPM environment from [chem-perturbridge_lpm](https://github.com/theislab/chem-perturbridge_lpm).
+
 For notebooks **02–04**:
 
 ```bash
@@ -87,7 +89,7 @@ After predictions finish, compute RMSE, MAE, Pearson, Spearman and cosine metric
 
 Use `notebooks/` as the working directory. Run **01–02 before Step 2**, and **03–04 after Step 3**.
 
-For **01**, follow the [LPM repository setup](https://github.com/theislab/chem-perturbridge_lpm) to install `perturb_lib`, and select the LPM kernel.
+For **01**, select the LPM kernel.
 
 For **02–04**, select `~/notebook_venv`:
 
@@ -105,7 +107,7 @@ jupyter lab
 | [03.2](notebooks/03.2_plotting_model_results_full_coverage.ipynb) | Summarize coverage-matched metrics. |
 | [04](notebooks/04_bootstrap.ipynb) | Bootstrap main and ablation results. |
 
-External inputs: `files/df_pubchem_op3.csv` (**02.1/02.2**) and `~/Chem-PerturBridge_analysis/scripts/cluster_bootstrap_ci.py` (**04**).
+External inputs: `files/df_pubchem_op3.csv` (**02.1/02.2**) and [~/Chem-PerturBridge_analysis/scripts/cluster_bootstrap_ci.py](https://github.com/theislab/Chem-PerturBridge_analysis/blob/4df7a2dbd08277f051822951aa862c1dcc94ba28/scripts/cluster_bootstrap_ci.py) (**04**).
 
 ## Project structure
 
