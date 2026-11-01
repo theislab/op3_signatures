@@ -1,18 +1,18 @@
 # op3_signatures
 
-Benchmarking of perturbation prediction methods on the NeurIPS-2023 single-cell perturbation dataset. The code (methods and metrics) is based on the following repo: [**task_perturbation_prediction**](https://github.com/openproblems-bio/task_perturbation_prediction/).
+Perturbation prediction benchmarks on the NeurIPS-2023 dataset, based on [task_perturbation_prediction](https://github.com/openproblems-bio/task_perturbation_prediction/).
 
 ## Setup
 
-Create all conda environments before running any pipeline:
+Create the pipeline environments:
 
 ```bash
-mamba env create -f venvs/configs/fetching_data/env.yaml   -p ./venvs/venvs/fetching_data -y
+mamba env create -f venvs/configs/fetching_data/env.yaml -p ./venvs/venvs/fetching_data -y
 mamba env create -f venvs/configs/nn_retraining_with_pseudolabels/env.yaml -p ./venvs/venvs/nn_retraining_with_pseudolabels -y
-mamba env create -f venvs/configs/metrics/env.yaml       -p ./venvs/venvs/metrics -y
+mamba env create -f venvs/configs/metrics/env.yaml -p ./venvs/venvs/metrics -y
 ```
 
-For the Jupyter notebooks under `notebooks/` (see [Jupyter notebooks](#jupyter-notebooks) below), create the analysis env at `~/notebook_venv`:
+For notebooks **02–04**:
 
 ```bash
 mamba env create -f venvs/configs/notebook/env.yaml -p ~/notebook_venv -y
@@ -20,183 +20,142 @@ mamba env create -f venvs/configs/notebook/env.yaml -p ~/notebook_venv -y
 
 ## Running the benchmark
 
-All commands must be run from the **project root**.
+Run commands from the **project root**. Pipelines require SLURM.
 
-### Step 1 — Download datasets
+### Step 1: Download datasets
 
-Downloads `de_train.h5ad`, `de_test.h5ad`, and `id_map.csv` from S3 to
-`data/benchmark/resources/datasets/neurips-2023-data/`.
+Downloads `de_train.h5ad`, `de_test.h5ad` and `id_map.csv` to `data/benchmark/resources/datasets/neurips-2023-data/`.
 
 ```bash
 ./run_pipelines/run_fetching_data.sh
 ```
 
-### Step 2 — Run the prediction pipeline
+After downloading, copy `neurips-2023-data/` into `data_<coverage>/benchmark/resources/datasets/` for both `full_coverage` and `coverage_match`.
 
-> **Prerequisite:** the stability pipeline reads `op3_emb_*.pkl` from
-> `data/benchmark/resources/datasets/neurips-2023-data-subsample/`. Generate
-> them first by running [notebooks 01 and 02](#jupyter-notebooks).
+### Step 2: Run the prediction pipeline
 
-Runs `nn_retraining_with_pseudolabels_mol_emb_learning_missed` as a multi-seed
-stability sweep across LPM/FP embedding versions. The top-level script
-orchestrates all per-epoch and per-embedding-mode configurations:
+First run [notebooks 01, 02.1 and 02.2](#jupyter-notebooks) to prepare the data and embeddings.
 
 ```bash
-./run_stability_pipeline.sh                # sweep default EPOCHS
-./run_stability_pipeline.sh 5 10 15        # sweep just these epochs
+./run_stability_pipeline_full_coverage.sh
+./run_stability_pipeline_coverage_match.sh
 ```
 
-Predictions are saved to
-`data/benchmark/results/methods/<pipeline>_<epoch>/stability/predictions_seed_<n>.h5ad`.
+Defaults: epoch 20, fixed/trainable embeddings, ten seeds (`0–4, 10–14`), including ablations and step-matched runs.
 
-#### `nn_retraining_with_pseudolabels_mol_emb_learning_missed`
+Inputs and results use `data_<coverage>/`, where `<coverage>` is `full_coverage` or `coverage_match` (see [Data structure](#data-structure)).
 
-This method is the **general case** that subsumes earlier specialised variants
-(rows below show the equivalent flag combination for each retired variant):
+#### Individual runs
 
-| Earlier method | Equivalent configuration |
-|---|---|
-| `nn_retraining_with_pseudolabels` | `--embedding_type none` |
-| `nn_retraining_with_pseudolabels_fingerprints` | `--embedding_type fp --embedding_layer concat` |
-| `nn_retraining_with_pseudolabels_embeddings` | `--embedding_type lpm --embedding_layer concat` |
-
-For single-configuration runs, the dedicated stability runner can also be
-called directly:
+Set `RUN_TAG` to select coverage:
 
 ```bash
-./run_pipelines/run_nn_retraining_with_pseudolabels_mol_emb_stability.sh \
+RUN_TAG=full_coverage ./run_pipelines/run_nn_retraining_with_pseudolabels_mol_emb_stability.sh \
     -D <subsample|original> \
-    -e <lpm|fp|none> \
+    -e <embedding_type> \
     [-l <concat|fixed|trainable>] \
     [-d] \
     [-f <embedding_file>] \
     [-S <seeds>]
 ```
 
-Options:
+| Flag | Values | Default | Purpose |
+|---|---|---|---|
+| `-D` | `subsample`, `original` | `subsample` | Dataset |
+| `-e` | `lpm`, `fp`, `chemb1`, `chemb2`, `molformer`, `pca_logfc`, `pca_t`, `none` | `none` | Embedding type |
+| `-l` | `concat`, `fixed`, `trainable` | `concat` | Embedding mode |
+| `-d` | flag | off | Dense projection before concatenation |
+| `-f` | filename or path | `op3_emb.pkl` | Embedding pickle; tag inferred from `op3_emb_<tag>.pkl` |
+| `-S` | comma-separated seeds | `0,1,2,3,4,10,11,12,13,14` | One job per seed |
 
-| Flag | Values | Default | Description |
-|------|--------|---------|-------------|
-| `-D` | `subsample`, `original` | `subsample` | Dataset to use |
-| `-e` | `lpm`, `fp`, `none` | `none` | Molecular embedding type |
-| `-l` | `concat`, `fixed`, `trainable` | `concat` | How the embedding is integrated into the model |
-| `-d` | flag | off | Project fingerprints through an extra Dense layer before concatenation (`concat` mode only) |
-| `-f` | filename | `op3_emb.pkl` | Embedding pickle (auto-derives a `<X>` tag from `op3_emb_<X>.pkl`) |
-| `-S` | csv of seeds | `0,1,2,3,4,10,11,12,13,14` | Seeds to run (one sbatch job per seed) |
+**Embedding modes:**
 
-**Embedding layer modes:**
+- `concat`: append external embeddings; optionally project them with `-d`.
+- `fixed`: initialize compound embeddings from external features and freeze them.
+- `trainable`: initialize the same way, then fine-tune them.
 
-- `concat` — standard learnable embeddings for cell type and compound; external fp/lpm features are appended as a separate input (optionally projected through a Dense layer with `-d`). No external embeddings are used when `-e none`.
-- `fixed` — learnable embeddings for cell types; compound embeddings are **initialised** from fp/lpm features and **frozen** (not updated during training), then projected to `emb_out`.
-- `trainable` — same as `fixed` but compound embedding weights are **fine-tuned** during training.
+### Step 3: Compute stability metrics
 
-Output predictions are named:
-- `nn_retraining_with_pseudolabels_mol_emb_learning_missed_<dataset>_none[_<tag>]` for `--embedding_type none`
-- `nn_retraining_with_pseudolabels_mol_emb_learning_missed_<dataset>_<type>_concat_<dense|not_dense>[_<tag>]` for `concat` mode
-- `nn_retraining_with_pseudolabels_mol_emb_learning_missed_<dataset>_<type>_<fixed|trainable>[_<tag>]` for `fixed`/`trainable` modes
-
-### Step 3 — Compute stability metrics
-
-Computes mean rowwise error (RMSE, MAE) and mean rowwise correlation
-(Pearson, Spearman, Cosine) between every seed's predictions and `de_test.h5ad`.
+After predictions finish, compute RMSE, MAE, Pearson, Spearman and cosine metrics:
 
 ```bash
-./run_stability_metrics.sh
+./run_pipelines/run_metrics_stability.sh -r full_coverage
+./run_pipelines/run_metrics_stability.sh -r coverage_match
 ```
-
-Results are saved to
-`data/benchmark/results/metrics/methods/<pipeline>/stability/seed_<n>/`.
 
 ## Jupyter notebooks
 
-.ipynb notebooks could be utilized for embddings matching and analysis of final results. All notebooks are
-intended to be run from the `~/notebook_venv` mamba environment created in
-[Setup](#setup):
+Use `notebooks/` as the working directory. Run **01–02 before Step 2**, and **03–04 after Step 3**.
+
+For **01**, follow the [LPM repository setup](https://github.com/theislab/chem-perturbridge_lpm) to install `perturb_lib`, and select the LPM kernel.
+
+For **02–04**, select `~/notebook_venv`:
 
 ```bash
 mamba activate ~/notebook_venv
-jupyter lab   # or: jupyter notebook
+jupyter lab
 ```
 
 | Notebook | Purpose |
 |---|---|
-| `01_get_precomputed_LPM_based_embeddings.ipynb` | Extract embedding tables from a trained LPM checkpoint. Run **before** Step 2. |
-| `02_match_LPM_based_embeddings_with_OP3.ipynb` | Match LPM embeddings to OP3 compounds + Morgan FPs and write the `op3_emb_*.pkl` files consumed by Step 2. Run **before** Step 2. |
-| `03_plotting_model_results.ipynb` | Aggregate stability metrics and plot results. Run **after** Step 3. |
+| [01](notebooks/01_get_precomputed_LPM_based_embeddings.ipynb) | Export LPM embeddings to `files/`. |
+| [02.1](notebooks/02.1_match_LPM_based_embeddings_with_OP3_full_coverage.ipynb) | Prepare full-coverage data and embeddings. |
+| [02.2](notebooks/02.2_match_LPM_based_embeddings_with_OP3_coverage_match.ipynb) | Prepare coverage-matched data and embeddings. |
+| [03.1](notebooks/03.1_plotting_model_results_full_coverage.ipynb) | Summarize full-coverage metrics. |
+| [03.2](notebooks/03.2_plotting_model_results_full_coverage.ipynb) | Summarize coverage-matched metrics. |
+| [04](notebooks/04_bootstrap.ipynb) | Bootstrap main and ablation results. |
 
-#### Prerequisites for notebook 01
-
-Notebook 01 needs the files related to the LPM model to load the model weights,
-so please clone the LPM-based corresponding repository and take follow the instructions
-on installing `perturb_lib` package mentioned in LPM-based repository or in the [original one](https://github.com/perturblib/perturblib/tree/main).
-
-Skip notebook 01 if you already have `op3_emb_*.pkl` pickles.
+External inputs: `files/df_pubchem_op3.csv` (**02.1/02.2**) and `~/Chem-PerturBridge_analysis/scripts/cluster_bootstrap_ci.py` (**04**).
 
 ## Project structure
 
-```
-├── data/                              # Downloaded datasets and results (not tracked by git)
-├── notebooks/                         # Jupyter notebooks (run via the ~/notebook_venv mamba env)
-├── pipelines/                         # Pipeline scripts (sbatch jobs)
-│   ├── common/                        # Shared pipelines (data fetching, metrics, stability metrics)
-│   └── nn_retraining_with_pseudolabels_mol_emb_learning_missed/
-├── run_pipelines/                     # Thin launchers that call pipelines/ scripts
-├── run_stability_pipeline.sh          # Top-level: multi-seed stability sweep
-├── run_stability_metrics.sh           # Top-level: stability metrics aggregator
-├── src/
-│   ├── data/                          # Dataset downloading utilities
-│   ├── methods/                       # Prediction method implementations
-│   │   └── nn_retraining_with_pseudolabels_mol_emb_learning_missed/
-│   ├── metrics/                       # Evaluation metric scripts (R)
-│   └── utils/                         # Shared utilities
+```text
+├── data_full_coverage/           # Full-coverage inputs and results
+├── data_coverage_match/          # Coverage-matched inputs and results
+├── files/                       # LPM embeddings and PubChem mapping
+├── notebooks/
+├── results/                     # Analysis CSVs
+├── pipelines/                   # SLURM jobs
+├── run_pipelines/               # Launchers
+├── run_stability_pipeline_full_coverage.sh
+├── run_stability_pipeline_coverage_match.sh
+├── src/                         # Data, methods, metrics and utilities
 └── venvs/
-    ├── configs/                       # Conda environment definitions (env.yaml per env)
-    │   ├── fetching_data/
-    │   ├── nn_retraining_with_pseudolabels/
-    │   ├── metrics/
-    │   └── notebook/                  # Jupyter / analysis env (installed at ~/notebook_venv)
-    └── venvs/                         # Installed environments (not tracked by git)
+    ├── configs/                 # Environment definitions
+    └── venvs/                   # Installed environments
 ```
 
 ## Logs
 
-All logs are written under `logs/`:
+Downloads: `logs/fetching_data/`. Predictions and metrics:
 
-```
-logs/
-├── fetching_data/                     # Data download logs
-├── metrics_stability/                 # Stability metrics (wrapper output + sbatch logs)
-└── methods/                           # Prediction method logs
-    └── nn_retraining_with_pseudolabels_mol_emb_learning_missed_<config>/
-        # One dir per config (dataset+embedding+layer+epoch)
+```text
+logs_<coverage>/
+├── metrics_stability/
+└── methods/<pipeline>/
 ```
 
-Each pipeline produces two files per run:
-- `run_<name>.PID<pid>.out` / `.err` — launcher output
-- `<name>.<jobid>.out` / `.err` — sbatch job output
+- Launcher: `run_<name>.PID<pid>.out` / `.err`
+- SLURM job: `<name>.<jobid>.out` / `.err`
 
 ## Data structure
 
-```
-data/
-└── benchmark/
-    ├── resources/
-    │   └── datasets/
-    │       └── neurips-2023-data-subsample/
-    │           ├── de_train.h5ad   # Training perturbation data
-    │           ├── de_test.h5ad    # Test perturbation data (ground truth)
-    │           ├── id_map.csv      # Cell type / compound mapping for test set
-    │           └── op3_emb_*.pkl   # LPM / fingerprint embeddings (per epoch / variant)
-    └── results/
-        ├── methods/                # Prediction method outputs (one dir per config)
-        │   └── nn_retraining_with_pseudolabels_mol_emb_learning_missed_<config>/
-        │       └── stability/
-        │           └── predictions_seed_<n>.h5ad
-        └── metrics/                # Metric outputs
-            └── methods/
-                └── <method>/
-                    └── stability/
-                        └── seed_<n>/
-                            ├── mean_rowwise_error.h5ad
-                            └── mean_rowwise_correlation.h5ad
+```text
+data_<coverage>/benchmark/
+├── resources/datasets/
+│   ├── neurips-2023-data/             # Full dataset (-D original)
+│   │   ├── de_train.h5ad
+│   │   ├── de_test.h5ad
+│   │   └── id_map.csv
+│   └── neurips-2023-data-subsample/   # -D subsample
+│       ├── de_train.h5ad
+│       ├── de_test.h5ad
+│       ├── id_map.csv
+│       └── op3_emb_*.pkl
+└── results/
+    ├── methods/<pipeline>/stability/
+    │   └── predictions_seed_<n>.h5ad
+    └── metrics/methods/<pipeline>/stability/seed_<n>/
+        ├── mean_rowwise_error.h5ad
+        └── mean_rowwise_correlation.h5ad
 ```
