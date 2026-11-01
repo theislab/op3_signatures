@@ -35,6 +35,9 @@ EMBEDDING_COL = {
     "lpm": "LPM_emb",
     "pca_logfc": "PCA.logFC",
     "pca_t": "PCA.t",
+    "chemb1": "ChemBERTa-v1",
+    "chemb2": "ChemBERTa-v2",
+    "molformer": "MoLFormer-XL",
 }
 
 

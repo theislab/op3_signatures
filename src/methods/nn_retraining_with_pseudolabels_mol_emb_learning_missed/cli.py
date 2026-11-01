@@ -6,7 +6,7 @@ def parse_args():
     parser.add_argument("--de_train", required=True,                        help="Path to de_train.h5ad")
     parser.add_argument("--id_map",   required=True,                        help="Path to id_map.csv")
     parser.add_argument("--embeddings", default=None,                         help="Path to op3_emb.pkl (required when --embedding_type is lpm or fp)")
-    parser.add_argument("--embedding_type", choices=["lpm", "fp", "pca_logfc", "pca_t", "none"], default="none", help="Type of external embedding to concatenate: lpm, fp, pca_logfc, pca_t, or none (default: none)")
+    parser.add_argument("--embedding_type", choices=["lpm", "fp", "pca_logfc", "pca_t", "chemb1", "chemb2", "molformer", "none"], default="none", help="Type of external embedding to concatenate: lpm, fp, pca_logfc, pca_t, chemb1, chemb2, molformer, or none (default: none)")
     parser.add_argument("--embedding_layer", choices=["concat", "fixed", "trainable"], default="concat", help="How to integrate the external embedding: concat, fixed, or trainable (default: concat)")
     parser.add_argument("--layer",    default="clipped_sign_log10_pval",    help="AnnData layer to use")
     parser.add_argument("--output",   required=True,                        help="Path to output .h5ad file")

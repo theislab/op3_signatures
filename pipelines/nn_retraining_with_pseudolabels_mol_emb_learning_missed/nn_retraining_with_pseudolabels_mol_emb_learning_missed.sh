@@ -11,7 +11,7 @@ set -e
 # Expects to be called from the project root (directly or via run_pipelines/).
 #
 # Options:
-#   -e  Embedding type: lpm, fp, pca_logfc, pca_t, or none  (default: none)
+#   -e  Embedding type: lpm, fp, pca_logfc, pca_t, chemb1, chemb2, molformer, or none  (default: none)
 #   -l  Embedding layer: concat, fixed, or trainable  (default: concat)
 #   -D  Dataset: subsample or original  (default: subsample)
 #   -P  PCA version subdirectory (e.g. v2_128); forces dataset=subsample and
@@ -60,7 +60,7 @@ while getopts ":e:l:D:P:f:T:b:s:dh" opt; do
             echo "Usage: $0 [-e embedding_type] [-l embedding_layer] [-D dataset] [-P pca_version] [-f embedding_file] [-T embedding_tag] [-b stability_subfolder] [-s seed] [-d]"
             echo ""
             echo "Optional:"
-            echo "  -e  Embedding type: lpm, fp, pca_logfc, pca_t, or none (default: none)"
+            echo "  -e  Embedding type: lpm, fp, pca_logfc, pca_t, chemb1, chemb2, molformer, or none (default: none)"
             echo "  -l  Embedding layer: concat, fixed, or trainable (default: concat; only when -e is not none)"
             echo "  -D  Dataset: subsample or original (default: subsample)"
             echo "  -P  PCA version subdirectory (e.g. v2_128); forces dataset=subsample and"
@@ -81,8 +81,8 @@ while getopts ":e:l:D:P:f:T:b:s:dh" opt; do
     esac
 done
 
-if [[ ! "$EMBEDDING_TYPE" =~ ^(lpm|fp|pca_logfc|pca_t|none)$ ]]; then
-    echo "Error: embedding_type must be 'lpm', 'fp', 'pca_logfc', 'pca_t', or 'none', got '${EMBEDDING_TYPE}'" >&2; exit 1
+if [[ ! "$EMBEDDING_TYPE" =~ ^(lpm|fp|pca_logfc|pca_t|chemb1|chemb2|molformer|none)$ ]]; then
+    echo "Error: embedding_type must be 'lpm', 'fp', 'pca_logfc', 'pca_t', 'chemb1', 'chemb2', 'molformer', or 'none', got '${EMBEDDING_TYPE}'" >&2; exit 1
 fi
 
 if [[ "$EMBEDDING_TYPE" != "none" ]] && [[ ! "$EMBEDDING_LAYER" =~ ^(concat|fixed|trainable)$ ]]; then
@@ -145,11 +145,11 @@ if [ -n "${EMBEDDING_TAG}" ] && [ "$EMBEDDING_TYPE" != "none" ]; then
 fi
 
 ENV_DIR=./venvs/venvs/nn_retraining_with_pseudolabels
-LOGS_DIR=./logs
+LOGS_DIR="./logs${RUN_TAG:+_${RUN_TAG}}"
 QOS=gpu_normal
 PARTITION=gpu_p
 
-BASE="./data/benchmark"
+BASE="./data${RUN_TAG:+_${RUN_TAG}}/benchmark"
 DATA_BASE="${BASE}/resources/datasets/${DATA_DIR}"
 
 DE_TRAIN="${DATA_BASE}/de_train.h5ad"

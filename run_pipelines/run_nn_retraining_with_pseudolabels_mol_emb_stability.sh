@@ -10,7 +10,7 @@ set -e
 #   data/benchmark/results/methods/<pipeline_name>/stability/predictions_seed_<n>.h5ad
 #
 # Options:
-#   -e  Embedding type: lpm, fp, pca_logfc, pca_t, or none  (default: none)
+#   -e  Embedding type: lpm, fp, pca_logfc, pca_t, chemb1, chemb2, molformer, or none  (default: none)
 #   -l  Embedding layer: concat, fixed, or trainable  (default: concat)
 #   -D  Dataset: subsample or original  (default: subsample)
 #   -P  PCA version subdirectory (e.g. v2_128); forces dataset=subsample and
@@ -47,7 +47,7 @@ EMBEDDING_TAG=""
 STABILITY_SUBFOLDER=""   # auto: stability_pca_<version> when -P is set, else stability
 SEEDS="0,1,2,3,4,10,11,12,13,14"
 
-LOGS_DIR=./logs
+LOGS_DIR="./logs${RUN_TAG:+_${RUN_TAG}}"
 
 while getopts ":e:l:D:P:f:T:b:S:dh" opt; do
     case $opt in
@@ -64,7 +64,7 @@ while getopts ":e:l:D:P:f:T:b:S:dh" opt; do
             echo "Usage: $0 [-e embedding_type] [-l embedding_layer] [-D dataset] [-P pca_version] [-f embedding_file] [-T embedding_tag] [-b stability_subfolder] [-S seeds] [-d]"
             echo ""
             echo "Optional:"
-            echo "  -e  Embedding type: lpm, fp, pca_logfc, pca_t, or none (default: none)"
+            echo "  -e  Embedding type: lpm, fp, pca_logfc, pca_t, chemb1, chemb2, molformer, or none (default: none)"
             echo "  -l  Embedding layer: concat, fixed, or trainable (default: concat)"
             echo "  -D  Dataset: subsample or original (default: subsample)"
             echo "  -P  PCA version subdirectory (e.g. v2_128); forces dataset=subsample and"
@@ -85,8 +85,8 @@ while getopts ":e:l:D:P:f:T:b:S:dh" opt; do
     esac
 done
 
-if [[ ! "$EMBEDDING_TYPE" =~ ^(lpm|fp|pca_logfc|pca_t|none)$ ]]; then
-    echo "Error: embedding_type must be 'lpm', 'fp', 'pca_logfc', 'pca_t', or 'none', got '${EMBEDDING_TYPE}'" >&2; exit 1
+if [[ ! "$EMBEDDING_TYPE" =~ ^(lpm|fp|pca_logfc|pca_t|chemb1|chemb2|molformer|none)$ ]]; then
+    echo "Error: embedding_type must be 'lpm', 'fp', 'pca_logfc', 'pca_t', 'chemb1', 'chemb2', 'molformer', or 'none', got '${EMBEDDING_TYPE}'" >&2; exit 1
 fi
 
 if [[ "$EMBEDDING_TYPE" != "none" ]] && [[ ! "$EMBEDDING_LAYER" =~ ^(concat|fixed|trainable)$ ]]; then
@@ -164,4 +164,4 @@ done
 
 echo ""
 echo "> All seeds submitted. Predictions will be saved to:"
-echo "  data/benchmark/results/methods/${BASE_LABEL}/${STABILITY_SUBFOLDER}/predictions_seed_<n>.h5ad"
+echo "  data${RUN_TAG:+_${RUN_TAG}}/benchmark/results/methods/${BASE_LABEL}/${STABILITY_SUBFOLDER}/predictions_seed_<n>.h5ad"

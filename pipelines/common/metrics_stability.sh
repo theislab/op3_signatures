@@ -20,13 +20,15 @@ set -e
 #       Omit to process all methods that have the given stability subfolder.
 #   -b  Stability subfolder name to read predictions from and write metrics to
 #       (default: stability)
+#   -r  Run tag: use ./data_<run_tag>/benchmark and log to ./logs_<run_tag>
+#       (default: ./data and ./logs; also read from the RUN_TAG env var)
 #   -h  Show this help message
 #
 # Env-var overrides (used by alternate flavours of the pipeline, e.g.
-# learning_missed):
+# learning_missed); these take precedence over -r:
 #   BASE           Data root containing results/ and resources/ subtrees
-#                  (default: ./data/benchmark)
-#   LOGS_DIR       Where sbatch logs are written (default: ./logs)
+#                  (default: ./data[_<run_tag>]/benchmark)
+#   LOGS_DIR       Where sbatch logs are written (default: ./logs[_<run_tag>])
 #   PIPELINE_NAME  SLURM job name and log subfolder (default: metrics_stability)
 # ============================================================================
 
@@ -36,13 +38,15 @@ set -e
 
 METHOD_FILTER=""
 STABILITY_SUBFOLDER="stability"
+RUN_TAG="${RUN_TAG:-}"
 
-while getopts ":m:b:h" opt; do
+while getopts ":m:b:r:h" opt; do
     case $opt in
         m) METHOD_FILTER=$OPTARG ;;
         b) STABILITY_SUBFOLDER=$OPTARG ;;
+        r) RUN_TAG=$OPTARG ;;
         h)
-            echo "Usage: $0 [-m method_name] [-b stability_subfolder]"
+            echo "Usage: $0 [-m method_name] [-b stability_subfolder] [-r run_tag]"
             echo ""
             echo "Optional:"
             echo "  -m  Restrict to one method by name, e.g.:"
@@ -50,6 +54,8 @@ while getopts ":m:b:h" opt; do
             echo "      Omit to process all methods with stability predictions."
             echo "  -b  Stability subfolder name to read predictions from and write metrics to"
             echo "      (default: stability)"
+            echo "  -r  Run tag: use ./data_<run_tag>/benchmark and log to ./logs_<run_tag>"
+            echo "      (default: ./data and ./logs)"
             echo "  -h  Show this help message"
             exit 0
             ;;
@@ -67,11 +73,11 @@ PROJECT_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 
 PIPELINE_NAME="${PIPELINE_NAME:-metrics_stability}"
 ENV_DIR=./venvs/venvs/metrics
-LOGS_DIR="${LOGS_DIR:-./logs}"
+LOGS_DIR="${LOGS_DIR:-./logs${RUN_TAG:+_${RUN_TAG}}}"
 QOS=cpu_normal
 PARTITION=cpu_p
 
-BASE="${BASE:-./data/benchmark}"
+BASE="${BASE:-./data${RUN_TAG:+_${RUN_TAG}}/benchmark}"
 RESULTS_DIR="${BASE}/results"
 DE_TEST="${BASE}/resources/datasets/neurips-2023-data/de_test.h5ad"
 DE_TEST_SUBSAMPLE="${BASE}/resources/datasets/neurips-2023-data-subsample/de_test.h5ad"
